@@ -1,0 +1,7 @@
+{
+  "python.autoComplete.extraPaths": [
+    "/home/andre/Documents/work/sara_ws/devel/lib/python2.7/dist-packages",
+    "/opt/ros/melodic/lib/python2.7/dist-packages",
+    "/home/andre/Documents/mrasl/thesis/caffe/python"
+  ]
+}
