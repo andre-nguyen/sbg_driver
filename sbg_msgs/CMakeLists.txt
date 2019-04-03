@@ -49,6 +49,9 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   ImuIntegral.msg
+  TriggerEvent.msg
+  UtcTime.msg
+  UtcTimeStatus.msg
 )
 
 ## Generate services in the 'srv' folder
