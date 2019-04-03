@@ -8,9 +8,17 @@ int main(int argc, char* argv[]) {
   ros::NodeHandle pnh("~");
 
   sbg::SBGDriver driver(nh, pnh);
+  if (!driver.Init()) {
+    ROS_FATAL("Unable to initialize.");
+    return 1;
+  }
 
-  // Need to spin because we have 1 subscriber and 1 service server
-  ros::spin();
+  ros::Rate r(250);
+  while (ros::ok()) {
+    driver.RunOnce();
+    ros::spinOnce();
+    r.sleep();
+  }
 
   return 0;
 }

@@ -29,6 +29,7 @@ class SBGDriver {
   void ReceiveEcomLog(SbgEComClass msg_class, SbgEComMsgId msg,
                       const SbgBinaryLogData *data);
 
+  void RunOnce();
  private:
   ros::NodeHandle nh_, pnh_;
 

@@ -63,6 +63,7 @@ noexcept :
 }
 
 SBGDriver::~SBGDriver() {
+  sbgEComClose(&sbg_handle_);
   sbgInterfaceSerialDestroy(&sbg_interface_);
 }
 
@@ -92,6 +93,7 @@ bool SBGDriver::Init() {
   auto disabled = SBG_ECOM_OUTPUT_MODE_DISABLED;
   SBG_CONFIG_PUB(SBG_ECOM_LOG_IMU_DATA, disabled, "imu", sensor_msgs::Imu);
   SBG_CONFIG_PUB(SBG_ECOM_LOG_UTC_TIME, disabled, "utc", sbg_msgs::UtcTime);
+  SBG_CONFIG(SBG_ECOM_LOG_STATUS, disabled);
   SBG_CONFIG(SBG_ECOM_LOG_EKF_QUAT, disabled);
   SBG_CONFIG_PUB(SBG_ECOM_LOG_MAG, disabled, "mag",
                  sensor_msgs::MagneticField);
@@ -114,6 +116,7 @@ bool SBGDriver::Init() {
                                                  this);
 
   error = sbgEComSetReceiveLogCallback(&sbg_handle_, ReceiveEcomLogC, this);
+  SBG_HANDLE_ERROR_RET(error);
 
   return true;
 }
@@ -124,11 +127,16 @@ bool SBGDriver::EnableStreamCallback(std_srvs::SetBoolRequest &request,
     for (auto com : output_com_config_) {
       SBG_CONFIG(com.first, com.second);
     }
+    sbg_sync_out_conf_[1].outputFunction = SBG_ECOM_SYNC_OUT_MODE_DISABLED;
   } else {
     for (auto com : output_com_config_) {
       SBG_CONFIG(com.first, SBG_ECOM_OUTPUT_MODE_DISABLED);
     }
+    sbg_sync_out_conf_[1].outputFunction = SBG_ECOM_SYNC_OUT_MODE_MAIN_LOOP;
   }
+
+  sbgEComCmdSyncOutSetConf(&sbg_handle_, SBG_ECOM_SYNC_OUT_B,
+                           &sbg_sync_out_conf_[1]);
 
   auto error = sbgEComCmdSettingsAction(&sbg_handle_, SBG_ECOM_SAVE_SETTINGS);
   response.success = (error == SBG_NO_ERROR);
@@ -145,7 +153,12 @@ void SBGDriver::ReceiveEcomLog(SbgEComClass msg_class, SbgEComMsgId msg,
   }
 }
 
-void SBGDriver::EcomHandleImu(const SbgBinaryLogData *) {
+void SBGDriver::RunOnce() {
+  sbgEComHandle(&sbg_handle_);
+}
+
+void SBGDriver::EcomHandleImu(const SbgBinaryLogData * data) {
+  ROS_INFO_THROTTLE(1, "IMU %d", data->imuData.timeStamp);
   sensor_msgs::Imu imu;
   pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
 }
@@ -153,7 +166,8 @@ void SBGDriver::EcomHandleImu(const SbgBinaryLogData *) {
 void SBGDriver::EcomHandleUtc(const SbgBinaryLogData*) {
 }
 
-void SBGDriver::EcomHandleStatus(const SbgBinaryLogData*) {
+void SBGDriver::EcomHandleStatus(const SbgBinaryLogData* data) {
+  ROS_INFO("Status %d", data->statusData.timeStamp);
 }
 
 void SBGDriver::EcomHandleEKFQuat(const SbgBinaryLogData*) {

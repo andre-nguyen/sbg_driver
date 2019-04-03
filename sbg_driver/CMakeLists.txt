@@ -38,7 +38,7 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} STATIC
             src/sbg_driver.cpp
 )
 
