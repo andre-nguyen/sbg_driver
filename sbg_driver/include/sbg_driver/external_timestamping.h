@@ -30,12 +30,13 @@ enum class SyncState {
 class ExternalTimestamping {
  public:
   typedef std::function<void(const ros::Time &stamp,
-                             const ros::Time &original_stamp,
+                             const uint32_t &original_stamp,
                              const sensor_msgs::ImuPtr imu)> PubImuFcn;
 
   // Stamp coming in from the imu
   typedef struct {
     uint32_t seq;
+    uint32_t sbg_us;      // microseconds since boot inside the imu message
     ros::Time imu_stamp;
     ros::Time arrival_stamp;
     sensor_msgs::ImuPtr imu;
@@ -66,7 +67,9 @@ class ExternalTimestamping {
    * @param imu_stamp Time stamp from SBG imu
    * @param imu IMU data itself
    */
-  void BufferImu(const uint32_t &seq, const ros::Time &imu_stamp,
+  void BufferImu(const uint32_t &seq,
+                 const ros::Time &imu_stamp,
+                 const uint32_t &micros,
                  sensor_msgs::ImuPtr imu);
 
   /**

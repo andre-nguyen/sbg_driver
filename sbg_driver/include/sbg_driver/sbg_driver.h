@@ -74,7 +74,7 @@ class SBGDriver {
   void EcomHandleEventA(const SbgBinaryLogData *);
 
   void PublishRosImu(const ros::Time &stamp,
-                     const ros::Time &original_stamp,
+                     const uint32 &original_stamp,
                      const sensor_msgs::ImuPtr imu);
 };
 

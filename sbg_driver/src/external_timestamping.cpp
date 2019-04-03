@@ -43,6 +43,7 @@ void ExternalTimestamping::Start() {
 
 void ExternalTimestamping::BufferImu(const uint32_t &seq,
                                      const ros::Time &imu_stamp,
+                                     const uint32_t &micros,
                                      sensor_msgs::ImuPtr imu) {
   std::lock_guard<std::mutex> lock_guard(mtx_buf_);
 
@@ -53,6 +54,7 @@ void ExternalTimestamping::BufferImu(const uint32_t &seq,
   // Set frame buffer
   imu_buf_.imu = imu;
   imu_buf_.seq = seq;
+  imu_buf_.sbg_us = micros;
   imu_buf_.arrival_stamp = ros::Time::now();
   imu_buf_.imu_stamp = imu_stamp;
 }
@@ -112,7 +114,7 @@ bool ExternalTimestamping::LookupHardwareStamp(const uint32_t &seq,
   }
 
   // successful match: publish frame
-  publish_imu_fcn_(hw_stamp_buf_.hardware_stamp, imu_buf_.imu_stamp, imu);
+  publish_imu_fcn_(hw_stamp_buf_.hardware_stamp, imu_buf_.sbg_us, imu);
   ROS_INFO_THROTTLE(5,
                     "%s frame#: %d stamp#: %d t_imu: %f t_hw: %f delay: %f",
                     kLogPrefix.c_str(),
@@ -155,7 +157,7 @@ bool ExternalTimestamping::LookupImu(const uint32_t &hw_stamp_seq,
              kLogPrefix.c_str(), expected_frame_seq);
   }
 
-  publish_imu_fcn_(hw_stamp, imu_buf_.imu_stamp, imu_buf_.imu);
+  publish_imu_fcn_(hw_stamp, imu_buf_.sbg_us, imu_buf_.imu);
   ROS_INFO_THROTTLE(5,
                     "%s frame#: %d stamp#: %d t_imu: %f t_hw: %f delay: %f",
                     kLogPrefix.c_str(),

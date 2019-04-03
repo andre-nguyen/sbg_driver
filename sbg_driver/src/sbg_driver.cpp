@@ -179,13 +179,11 @@ void SBGDriver::RunOnce() {
 
 void SBGDriver::EcomHandleImu(const SbgBinaryLogData *data) {
   sensor_msgs::ImuPtr imu(new sensor_msgs::Imu());
-  double seconds = static_cast<double>(data->imuData.timeStamp) / 1e6;
-  ros::Time sbg_time(seconds);
   ros::Time t = ros::Time::now();
   if(!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
     // Hardware stamp not found, buffer it and let the next hardware stamp
     // message come in and deal with it.
-    external_timestamping_.BufferImu(imu_seq_, t, imu);
+    external_timestamping_.BufferImu(imu_seq_, t, data->imuData.timeStamp, imu);
   }
 
   imu_seq_++;
@@ -212,31 +210,31 @@ void SBGDriver::EcomHandleEventA(const SbgBinaryLogData *data) {
 }
 
 void SBGDriver::PublishRosImu(const ros::Time &stamp,
-                              const ros::Time &original_stamp,
+                              const uint32 &/*original_stamp*/,
                               const sensor_msgs::ImuPtr imu) {
   // Restamp
   imu->header.stamp = stamp;
 
   // If we can find the corresponding ekf quaternion using the original
   // stamp, add it to the imu message.
-  uint32 micros = original_stamp.sec * 1e6 + original_stamp.nsec / 1e3;
-  auto search = ekf_quat_buf_.find(micros);
-  if (search != ekf_quat_buf_.end()) {
-    // Found! fill in imu data
-    QuatToRosQuatCov(search->second, &imu->orientation,
-        &imu->orientation_covariance);
-  }
+//  auto search = ekf_quat_buf_.find(original_stamp);
+//  if (search != ekf_quat_buf_.end()) {
+//    // Found! fill in imu data
+//    QuatToRosQuatCov(search->second, &imu->orientation,
+//        &imu->orientation_covariance);
+//  }
 
   // Publish no matter what
   this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
 
   // Cleanup
-  for(auto it = ekf_quat_buf_.begin(); it != ekf_quat_buf_.end();) {
-    if (it->first < micros) {
-      ekf_quat_buf_.erase(it);
-    }
-  }
-  ekf_quat_buf_.erase(search);
+//  for(auto it = ekf_quat_buf_.begin(); it != ekf_quat_buf_.end();) {
+//    if (it->first < original_stamp) {
+//      ekf_quat_buf_.erase(it);
+//      ++it;
+//    }
+//  }
+//  ekf_quat_buf_.erase(search);
 }
 
 }  // namespace sbg
