@@ -23,6 +23,7 @@ else ()
 endif()
 
 add_library(sbgECom STATIC ${SRC} ${COMMON_SRC})
+target_compile_options(sbgECom PRIVATE -fPIC)
 
 if (MSVC)
 	target_link_libraries(sbgECom Ws2_32)
