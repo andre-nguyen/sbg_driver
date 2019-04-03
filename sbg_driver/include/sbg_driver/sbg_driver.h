@@ -8,12 +8,14 @@
 #include <sbgECom.h>
 #include <sbgEComLib.h>
 #include <ros/ros.h>
+#include <sara_msgs/UIntStamped.h>
 #include <std_srvs/SetBool.h>
 #include <functional>
 #include <map>
 #include <unordered_map>
 #include <string>
 #include <tuple>
+#include "sbg_driver/external_timestamping.h"
 
 namespace sbg {
 
@@ -39,33 +41,41 @@ class SBGDriver {
    * @param msg
    * @param data
    */
-  void ReceiveEcomLog(SbgEComMsgId msg, const SbgBinaryLogData *data);
+  bool ReceiveEcomLog(SbgEComMsgId msg, const SbgBinaryLogData *data);
 
   void RunOnce();
 
  private:
   ros::NodeHandle nh_, pnh_;
+  std::unique_ptr<ros::Publisher> pubs_[SBG_ECOM_LOG_ECOM_NUM_MESSAGES];
+  ros::ServiceServer enable_stream_service_;
+  ExternalTimestamping external_timestamping_;
 
   SbgInterface sbg_interface_;
   SbgEComHandle sbg_handle_;
   SbgEComSyncOutConf sbg_sync_out_conf_[2];
 
-  std::unique_ptr<ros::Publisher> pubs_[SBG_ECOM_LOG_ECOM_NUM_MESSAGES];
-  ros::ServiceServer enable_stream_service_;
+  static constexpr size_t kCircularBufSize = 50;
+  unsigned int imu_seq_;
+  std::map<uint32, SbgLogEkfQuatData> ekf_quat_buf_;
 
   // ecom log -> output frequency
   std::map<SbgEComLog, SbgEComOutputMode> output_com_config_;
 
   // Ecom callbacks
-  using EcomCallback = std::function<void(const SbgBinaryLogData*)>;
+  using EcomCallback = std::function<void(const SbgBinaryLogData *)>;
   std::unordered_map<SbgEComMsgId, EcomCallback> ecom_callbacks_;
 
-  void EcomHandleImu(const SbgBinaryLogData*);
-  void EcomHandleUtc(const SbgBinaryLogData*);
-  void EcomHandleStatus(const SbgBinaryLogData*);
-  void EcomHandleEKFQuat(const SbgBinaryLogData*);
-  void EcomHandleMag(const SbgBinaryLogData*);
-  void EcomHandleEventA(const SbgBinaryLogData*);
+  void EcomHandleImu(const SbgBinaryLogData *);
+  void EcomHandleUtc(const SbgBinaryLogData *);
+  void EcomHandleStatus(const SbgBinaryLogData *);
+  void EcomHandleEKFQuat(const SbgBinaryLogData *);
+  void EcomHandleMag(const SbgBinaryLogData *);
+  void EcomHandleEventA(const SbgBinaryLogData *);
+
+  void PublishRosImu(const ros::Time &stamp,
+                     const ros::Time &original_stamp,
+                     const sensor_msgs::ImuPtr imu);
 };
 
 }  // namespace sbg

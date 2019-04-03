@@ -49,6 +49,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   ImuIntegral.msg
+  Magnetometer.msg
   TriggerEvent.msg
   UtcTime.msg
   UtcTimeStatus.msg

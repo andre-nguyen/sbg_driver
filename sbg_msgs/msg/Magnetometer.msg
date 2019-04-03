@@ -1,0 +1,4 @@
+Header header
+uint16 status
+geometry_msgs/Vector3 mag
+geometry_msgs/Vector3 accelerometer

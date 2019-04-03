@@ -13,6 +13,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  ROS_INFO("SBG IMU Connected.");
+
   ros::Rate r(250);
   while (ros::ok()) {
     driver.RunOnce();

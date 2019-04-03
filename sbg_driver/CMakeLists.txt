@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES sbg_driver
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp sara_msgs sbg_msgs std_srvs
 #  DEPENDS system_lib
 )
@@ -32,15 +32,17 @@ add_subdirectory(external/sbgECom)
 ## Your package locations should be listed before other locations
 include_directories(
   include
-  ${PROJECT_SOURCE_DIR}/external/sbgECom/common
-  ${PROJECT_SOURCE_DIR}/external/sbgECom/src
   ${catkin_INCLUDE_DIRS}
 )
 
+include_directories(SYSTEM
+        ${PROJECT_SOURCE_DIR}/external/sbgECom/common
+        ${PROJECT_SOURCE_DIR}/external/sbgECom/src)
+
 ## Declare a C++ library
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME}
             src/sbg_driver.cpp
-)
+            src/sbg_ecom_ros_conversions.cpp src/external_timestamping.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -55,10 +57,17 @@ target_link_libraries(${PROJECT_NAME}
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
+target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall
+        -Wpedantic
+        -Wextra
+        -Werror)
+
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/sbg_driver_node.cpp)
+add_executable(${PROJECT_NAME}_node
+        src/sbg_driver_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
