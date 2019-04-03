@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 2.8.3)
 project(sbg_driver)
 
 find_package(catkin REQUIRED COMPONENTS
+             roscpp
              sara_msgs
-             sbg_msgs)
+             sbg_msgs
+             std_srvs)
 
 ###################################
 ## catkin specific configuration ##
@@ -17,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES sbg_driver
-  CATKIN_DEPENDS sara_msgs sbg_msgs
+  CATKIN_DEPENDS roscpp sara_msgs sbg_msgs std_srvs
 #  DEPENDS system_lib
 )
 
@@ -37,7 +39,7 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-src/sbg_driver.cpp
+            src/sbg_driver.cpp
 )
 
 ## Add cmake target dependencies of the library
@@ -51,8 +53,7 @@ add_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
                       sbgECom)
 
-target_compile_options(${PROJECT_NAME} PRIVATE
-                       -std=c++11)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -76,8 +77,7 @@ target_link_libraries(${PROJECT_NAME}_node
                       ${PROJECT_NAME}
                       ${catkin_LIBRARIES})
 
-target_compile_options(${PROJECT_NAME}_node PRIVATE
-                       -std=c++11)
+set_property(TARGET ${PROJECT_NAME}_node PROPERTY CXX_STANDARD 14)
 
 #############
 ## Install ##

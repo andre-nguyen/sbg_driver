@@ -1,25 +1,30 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "",
-        "limitSymbolsToIncludedHeaders": true
-      },
-      "includePath": [
-        "/home/andre/Documents/work/sara_ws/devel/include",
-        "/opt/ros/melodic/include",
-        "/home/andre/Documents/work/sara_ws/src/curves/curves/include",
-        "/home/andre/Documents/work/sara_ws/src/curves/curves_ros/include",
-        "/home/andre/Documents/work/sara_ws/src/kindr/include",
-        "/home/andre/Documents/work/sara_ws/src/kindr_ros/kindr_ros/include",
-        "/home/andre/Documents/work/sara_ws/src/kindr_ros/kindr_rviz_plugins/include",
-        "/home/andre/Documents/work/sara_ws/src/kindr_ros/multi_dof_joint_trajectory_rviz_plugins/include",
-        "/home/andre/Documents/work/sara_ws/src/rosserial/rosserial_server/include",
-        "/home/andre/Documents/work/sara_ws/src/rosserial/rosserial_test/include",
-        "/home/andre/Documents/work/sara_ws/src/sara/sara_slam/include",
-        "/usr/include"
-      ],
-      "name": "Linux"
-    }
-  ]
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/andre/Documents/work/sara_ws/devel/include",
+                "/opt/ros/melodic/include",
+                "/home/andre/Documents/work/sara_ws/src/curves/curves/include",
+                "/home/andre/Documents/work/sara_ws/src/curves/curves_ros/include",
+                "/home/andre/Documents/work/sara_ws/src/kindr/include",
+                "/home/andre/Documents/work/sara_ws/src/kindr_ros/kindr_ros/include",
+                "/home/andre/Documents/work/sara_ws/src/kindr_ros/kindr_rviz_plugins/include",
+                "/home/andre/Documents/work/sara_ws/src/kindr_ros/multi_dof_joint_trajectory_rviz_plugins/include",
+                "/home/andre/Documents/work/sara_ws/src/rosserial/rosserial_server/include",
+                "/home/andre/Documents/work/sara_ws/src/rosserial/rosserial_test/include",
+                "/home/andre/Documents/work/sara_ws/src/sara/sara_slam/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
 }
