@@ -23,13 +23,26 @@ class SBGDriver {
   ~SBGDriver();
   bool Init();
 
+  /**
+   * Service call to enable or disable all outputs
+   * @param request
+   * @param response
+   * @return
+   */
   bool EnableStreamCallback(std_srvs::SetBoolRequest &request,
                             std_srvs::SetBoolResponse &response);
 
-  void ReceiveEcomLog(SbgEComClass msg_class, SbgEComMsgId msg,
-                      const SbgBinaryLogData *data);
+  /**
+   * Callback when sbgEcom receives a message. We drop the message class
+   * argument because for the Ellipse we are only using PORTA. Class would
+   * only matter if we decide to use the high speed PortE.
+   * @param msg
+   * @param data
+   */
+  void ReceiveEcomLog(SbgEComMsgId msg, const SbgBinaryLogData *data);
 
   void RunOnce();
+
  private:
   ros::NodeHandle nh_, pnh_;
 

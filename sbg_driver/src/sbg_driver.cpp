@@ -74,7 +74,7 @@ SbgErrorCode ReceiveEcomLogC(SbgEComHandle *pHandle,
                              const SbgBinaryLogData *pLogData,
                              void *pUserArg) {
   auto driver = static_cast<SBGDriver *>(pUserArg);
-  driver->ReceiveEcomLog(msgClass, msg, pLogData);
+  driver->ReceiveEcomLog(msg, pLogData);
 }
 
 bool SBGDriver::Init() {
@@ -143,7 +143,7 @@ bool SBGDriver::EnableStreamCallback(std_srvs::SetBoolRequest &request,
   return true;
 }
 
-void SBGDriver::ReceiveEcomLog(SbgEComClass msg_class, SbgEComMsgId msg,
+void SBGDriver::ReceiveEcomLog(SbgEComMsgId msg,
                                const SbgBinaryLogData *data) {
   auto it = ecom_callbacks_.find(msg);
   if (it != ecom_callbacks_.end()) {
