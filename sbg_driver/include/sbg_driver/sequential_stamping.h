@@ -3,10 +3,12 @@
 #ifndef SBG_DRIVER_SEQUENTIAL_STAMPING_H_
 #define SBG_DRIVER_SEQUENTIAL_STAMPING_H_
 
-#include <boost/circular_buffer.hpp>
+#include <ros/ros.h>
+#include <sara_msgs/UIntStamped.h>
 #include <sbg_msgs/ImuIntegral.h>
 #include <sbgECom.h>
-#include <ros/ros.h>
+#include <boost/circular_buffer.hpp>
+#include <functional>
 
 namespace sbg {
 
@@ -16,6 +18,8 @@ namespace sbg {
  */
 class SequentialTimestamping {
  public:
+
+
   typedef struct {
     ros::Time arrival_time;
     unsigned int sequence;
@@ -38,13 +42,13 @@ class SequentialTimestamping {
               const unsigned int &seq,
               const SbgLogImuData &imu);
 
-  bool AddStamp(const unsigned int &seq,
-                const ros::Time &stamp);
+  bool AddQuaternion(const SbgLogEkfQuatData &quat);
 
-
+  void StampCallback(const sara_msgs::UIntStamped::ConstPtr &stamp);
 
  private:
   ros::NodeHandle nh_;
+  ros::Subscriber stamp_sub_;
   unsigned int last_imu_sbg_stamp_us_;
   bool is_started_;
 
