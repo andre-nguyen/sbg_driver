@@ -108,7 +108,7 @@ bool ExternalTimestamping::LookupHardwareStamp(const uint32_t &seq,
     // however, we did not determine the sequence yet or the seq id did not
     // match the one we expected call syncSeqOffset to set or reset the seq id
     // offset between frames and stamps
-    ROS_WARN_THROTTLE(1, "%s Dropped stamp CACA: could not find hw stamp with "
+    ROS_WARN_THROTTLE(1, "%s Dropped stamp: could not find hw stamp with "
                          "seq id: %d %d", kLogPrefix.c_str(),
                       expected_hw_stamp_seq,
                       hw_stamp_buf_.seq);

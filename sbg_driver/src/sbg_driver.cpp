@@ -177,7 +177,6 @@ void SBGDriver::RunOnce() {
   //  sbgEComHandle(&sbg_handle_);
   SbgErrorCode errorCode = SBG_NO_ERROR;
   do {
-    ros::spinOnce();
     errorCode = sbgEComHandleOneLog(&sbg_handle_);
   } while (errorCode != SBG_NOT_READY);
 }
