@@ -94,8 +94,8 @@ bool ExternalTimestamping::LookupHardwareStamp(const uint32_t &seq,
       hw_stamp_buf_.arrival_stamp.toSec();
   if (std::fabs(age_buffered_hw_stamp) > kMaxStampAge) {
     ROS_WARN_THROTTLE(1, "%s Delay out of bounds: %f s vs %f. Clearing "
-                          "buffer", kLogPrefix.c_str(),
-                       kMaxStampAge, age_buffered_hw_stamp);
+                         "buffer", kLogPrefix.c_str(),
+                      kMaxStampAge, age_buffered_hw_stamp);
     hw_stamp_buf_.reset();
     state_ = SyncState::wait_for_sync;
     return false;
@@ -108,8 +108,10 @@ bool ExternalTimestamping::LookupHardwareStamp(const uint32_t &seq,
     // however, we did not determine the sequence yet or the seq id did not
     // match the one we expected call syncSeqOffset to set or reset the seq id
     // offset between frames and stamps
-    ROS_WARN("%s Dropped stammp: could not find hw stamp with seq "
-             "id: %d", kLogPrefix.c_str(), expected_hw_stamp_seq);
+    ROS_WARN_THROTTLE(1, "%s Dropped stamp CACA: could not find hw stamp with "
+                         "seq id: %d %d", kLogPrefix.c_str(),
+                      expected_hw_stamp_seq,
+                      hw_stamp_buf_.seq);
     SyncSeqOffset(seq);
   }
 
@@ -142,8 +144,8 @@ bool ExternalTimestamping::LookupImu(const uint32_t &hw_stamp_seq,
       imu_buf_.arrival_stamp.toSec();
   if (std::fabs(age_buffered_frame) > kMaxFrameAge) {
     ROS_WARN_THROTTLE(1, "%s Delay out of bounds %f s. Dropping "
-                          "frame", kLogPrefix.c_str(),
-                       age_buffered_frame);
+                         "frame", kLogPrefix.c_str(),
+                      age_buffered_frame);
     imu_buf_.imu.reset();
     state_ = SyncState::wait_for_sync;
     return false;
@@ -176,8 +178,6 @@ void ExternalTimestamping::HardwareStampCallback(
     return;
   }
 
-  ROS_ERROR_THROTTLE(1, "should go through");
-
   ros::Time arrival_stamp = ros::Time::now();
   ros::Time hw_stamp = stamp.stamp;
   uint32_t hw_stamp_seq = stamp.seq;
@@ -187,7 +187,6 @@ void ExternalTimestamping::HardwareStampCallback(
     hw_stamp_buf_.seq = hw_stamp_seq;
     hw_stamp_buf_.arrival_stamp = arrival_stamp;
     hw_stamp_buf_.hardware_stamp = hw_stamp;
-    ROS_ERROR_THROTTLE(1, "set");
   }
 }
 

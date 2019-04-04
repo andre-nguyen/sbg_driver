@@ -40,9 +40,10 @@ include_directories(SYSTEM
         ${PROJECT_SOURCE_DIR}/external/sbgECom/src)
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}
+add_library(${PROJECT_NAME} STATIC
             src/sbg_driver.cpp
-            src/sbg_ecom_ros_conversions.cpp src/external_timestamping.cpp)
+            src/sbg_ecom_ros_conversions.cpp
+            src/external_timestamping.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

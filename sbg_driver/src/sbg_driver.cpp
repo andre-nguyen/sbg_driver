@@ -174,13 +174,14 @@ bool SBGDriver::ReceiveEcomLog(SbgEComMsgId msg,
 }
 
 void SBGDriver::RunOnce() {
+  ros::spinOnce();
   sbgEComHandle(&sbg_handle_);
 }
 
 void SBGDriver::EcomHandleImu(const SbgBinaryLogData *data) {
   sensor_msgs::ImuPtr imu(new sensor_msgs::Imu());
   ros::Time t = ros::Time::now();
-  if(!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
+  if (!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
     // Hardware stamp not found, buffer it and let the next hardware stamp
     // message come in and deal with it.
     external_timestamping_.BufferImu(imu_seq_, t, data->imuData.timeStamp, imu);
