@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 
   ROS_INFO("SBG IMU Connected.");
 
-  ros::Rate r(250);
+  ros::Rate r(400);
 
   while (ros::ok()) {
     ros::spinOnce();

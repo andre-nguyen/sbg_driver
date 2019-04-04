@@ -98,7 +98,7 @@ bool SBGDriver::Init() {
   // Disable all the relevant outputs at start but configure their publishers
   // if relevant
   auto disabled = SBG_ECOM_OUTPUT_MODE_DISABLED;
-  SBG_CONFIG_PUB(SBG_ECOM_LOG_IMU_DATA, disabled, "imu", sensor_msgs::Imu);
+  SBG_CONFIG_PUB(SBG_ECOM_LOG_IMU_DATA, disabled, "imu", sbg_msgs::ImuIntegral);
   SBG_CONFIG_PUB(SBG_ECOM_LOG_UTC_TIME, disabled, "utc", sbg_msgs::UtcTime);
   SBG_CONFIG(SBG_ECOM_LOG_STATUS, disabled);
   SBG_CONFIG(SBG_ECOM_LOG_EKF_QUAT, disabled);
@@ -174,12 +174,18 @@ bool SBGDriver::ReceiveEcomLog(SbgEComMsgId msg,
 }
 
 void SBGDriver::RunOnce() {
-  ros::spinOnce();
-  sbgEComHandle(&sbg_handle_);
+  //  sbgEComHandle(&sbg_handle_);
+  SbgErrorCode errorCode = SBG_NO_ERROR;
+  do {
+    ros::spinOnce();
+    errorCode = sbgEComHandleOneLog(&sbg_handle_);
+  } while (errorCode != SBG_NOT_READY);
 }
 
 void SBGDriver::EcomHandleImu(const SbgBinaryLogData *data) {
+//  ROS_INFO("IMU %d", data->imuData.timeStamp);
   sensor_msgs::ImuPtr imu(new sensor_msgs::Imu());
+  *imu = ImuToRosImu(data->imuData);
   ros::Time t = ros::Time::now();
   if (!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
     // Hardware stamp not found, buffer it and let the next hardware stamp
@@ -195,7 +201,7 @@ void SBGDriver::EcomHandleUtc(const SbgBinaryLogData *data) {
 }
 
 void SBGDriver::EcomHandleStatus(const SbgBinaryLogData *data) {
-  ROS_INFO_THROTTLE(5, "Status %d", data->statusData.timeStamp);
+  ROS_INFO("Status %d", data->statusData.timeStamp);
 }
 
 void SBGDriver::EcomHandleEKFQuat(const SbgBinaryLogData *data) {
@@ -226,7 +232,9 @@ void SBGDriver::PublishRosImu(const ros::Time &stamp,
 //  }
 
   // Publish no matter what
-  this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
+  sbg_msgs::ImuIntegral imu_integral;
+  imu_integral.imu = *imu;
+  this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu_integral);
 
   // Cleanup
 //  for(auto it = ekf_quat_buf_.begin(); it != ekf_quat_buf_.end();) {
