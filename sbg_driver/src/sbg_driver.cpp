@@ -35,12 +35,12 @@ noexcept :
     nh_(nh), pnh_(pnh), external_timestamping_(pnh), imu_seq_(0),
     // @formatter:off
     output_com_config_({
-      {SBG_ECOM_LOG_IMU_DATA, SBG_ECOM_OUTPUT_MODE_MAIN_LOOP},
+      {SBG_ECOM_LOG_IMU_DATA, SBG_ECOM_OUTPUT_MODE_DIV_2},
       {SBG_ECOM_LOG_UTC_TIME, SBG_ECOM_OUTPUT_MODE_DIV_200},
       {SBG_ECOM_LOG_STATUS,   SBG_ECOM_OUTPUT_MODE_DIV_200},
       {SBG_ECOM_LOG_EKF_QUAT, SBG_ECOM_OUTPUT_MODE_MAIN_LOOP},
       {SBG_ECOM_LOG_MAG,      SBG_ECOM_OUTPUT_MODE_DIV_4},
-      {SBG_ECOM_LOG_EVENT_A,  SBG_ECOM_OUTPUT_MODE_EVENT_IN_A}
+      {SBG_ECOM_LOG_EVENT_A,  SBG_ECOM_OUTPUT_MODE_NEW_DATA}
     })
     // @formatter:on
 {
@@ -113,6 +113,14 @@ bool SBGDriver::Init() {
   sbgEComCmdSyncOutSetConf(&sbg_handle_, SBG_ECOM_SYNC_OUT_B,
                            &sbg_sync_out_conf_[1]);
 
+  // Enable input trigger pps
+  SbgEComSyncInConf sync_in_a;
+  sync_in_a.delay = 0;
+  sync_in_a.sensitivity =
+      SbgEComSyncInSensitivity::SBG_ECOM_SYNC_IN_RISING_EDGE;
+  ROS_WARN("fucl");
+  sbgEComCmdSyncInSetConf(&sbg_handle_, SBG_ECOM_SYNC_IN_A, &sync_in_a);
+
   // apply and reboot
   error = sbgEComCmdSettingsAction(&sbg_handle_, SBG_ECOM_SAVE_SETTINGS);
   SBG_HANDLE_ERROR_RET(error);
@@ -128,7 +136,7 @@ bool SBGDriver::Init() {
   // Register publishing callback
   ExternalTimestamping::PubImuFcn pub_imu_fcn =
       std::bind(&SBGDriver::PublishRosImu, this, std::placeholders::_1,
-          std::placeholders::_2, std::placeholders::_3);
+                std::placeholders::_2, std::placeholders::_3);
 
   external_timestamping_.Setup(pub_imu_fcn, 200, 0.0);
 
@@ -174,25 +182,29 @@ bool SBGDriver::ReceiveEcomLog(SbgEComMsgId msg,
 }
 
 void SBGDriver::RunOnce() {
-  //  sbgEComHandle(&sbg_handle_);
-  SbgErrorCode errorCode = SBG_NO_ERROR;
-  do {
-    errorCode = sbgEComHandleOneLog(&sbg_handle_);
-  } while (errorCode != SBG_NOT_READY);
+  sbgEComHandle(&sbg_handle_);
+//  SbgErrorCode errorCode = SBG_NO_ERROR;
+//  do {
+//    errorCode = sbgEComHandleOneLog(&sbg_handle_);
+//  } while (errorCode != SBG_NOT_READY);
 }
 
 void SBGDriver::EcomHandleImu(const SbgBinaryLogData *data) {
 //  ROS_INFO("IMU %d", data->imuData.timeStamp);
-  sensor_msgs::ImuPtr imu(new sensor_msgs::Imu());
-  *imu = ImuToRosImu(data->imuData);
-  ros::Time t = ros::Time::now();
-  if (!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
-    // Hardware stamp not found, buffer it and let the next hardware stamp
-    // message come in and deal with it.
-    external_timestamping_.BufferImu(imu_seq_, t, data->imuData.timeStamp, imu);
-  }
-
-  imu_seq_++;
+//  sensor_msgs::ImuPtr imu(new sensor_msgs::Imu());
+//  *imu = ImuToRosImu(data->imuData);
+//  ros::Time t = ros::Time::now();
+//  if (!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
+//    // Hardware stamp not found, buffer it and let the next hardware stamp
+//    // message come in and deal with it.
+//    external_timestamping_.BufferImu(imu_seq_, t, data->imuData.timeStamp, imu);
+//  }
+//
+//  imu_seq_++;
+  sbg_msgs::ImuIntegral imu;
+  imu = ImuToImuInt(data->imuData);
+  imu.header.stamp = ros::Time::now();  // Override hardware stamp
+  this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
 }
 
 void SBGDriver::EcomHandleUtc(const SbgBinaryLogData *data) {
@@ -200,7 +212,7 @@ void SBGDriver::EcomHandleUtc(const SbgBinaryLogData *data) {
 }
 
 void SBGDriver::EcomHandleStatus(const SbgBinaryLogData *data) {
-  ROS_INFO("Status %d", data->statusData.timeStamp);
+  ROS_INFO_THROTTLE(5, "Status %d", data->statusData.timeStamp);
 }
 
 void SBGDriver::EcomHandleEKFQuat(const SbgBinaryLogData *data) {
@@ -212,7 +224,9 @@ void SBGDriver::EcomHandleMag(const SbgBinaryLogData *data) {
 }
 
 void SBGDriver::EcomHandleEventA(const SbgBinaryLogData *data) {
-  pubs_[SBG_ECOM_LOG_EVENT_A]->publish(EventToRosEvent(data->eventMarker));
+  auto evt = EventToRosEvent(data->eventMarker);
+  evt.header.stamp = ros::Time::now();
+  pubs_[SBG_ECOM_LOG_EVENT_A]->publish(evt);
 }
 
 void SBGDriver::PublishRosImu(const ros::Time &stamp,

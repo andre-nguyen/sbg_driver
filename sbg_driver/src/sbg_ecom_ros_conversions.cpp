@@ -32,7 +32,31 @@ sensor_msgs::Imu ImuToRosImu(const SbgLogImuData &data) {
   imu.angular_velocity.z = data.gyroscopes[2];
   imu.angular_velocity_covariance[0] = -1;  // Unknown
 
-  imu.orientation_covariance[0] = -1; // Unknown in this message
+  imu.orientation_covariance[0] = -1;  // Unknown in this message
+
+  return imu;
+}
+
+sbg_msgs::ImuIntegral ImuToImuInt(const SbgLogImuData &data) {
+  sbg_msgs::ImuIntegral imu;
+  imu.time_stamp = data.timeStamp;
+  imu.imu.linear_acceleration.x = data.accelerometers[0];
+  imu.imu.linear_acceleration.y = data.accelerometers[1];
+  imu.imu.linear_acceleration.z = data.accelerometers[2];
+  imu.imu.linear_acceleration_covariance[0] = -1;  // Unknown
+  imu.imu.angular_velocity.x = data.gyroscopes[0];
+  imu.imu.angular_velocity.y = data.gyroscopes[1];
+  imu.imu.angular_velocity.z = data.gyroscopes[2];
+  imu.imu.angular_velocity_covariance[0] = -1;  // Unknown
+  imu.imu.orientation_covariance[0] = -1;  // Unknown in this message
+
+  imu.temp = data.temperature;
+  imu.delta_vel.x = data.deltaVelocity[0];
+  imu.delta_vel.y = data.deltaVelocity[1];
+  imu.delta_vel.z = data.deltaVelocity[2];
+  imu.delta_angle.x = data.deltaAngle[0];
+  imu.delta_angle.y = data.deltaAngle[1];
+  imu.delta_angle.z = data.deltaAngle[2];
 
   return imu;
 }
@@ -59,7 +83,7 @@ sbg_msgs::TriggerEvent EventToRosEvent(const SbgLogEvent &data) {
   sbg_msgs::TriggerEvent evt;
 
   StampToRosHeader(data.timeStamp, &evt.header);
-  const double kStampSeconds = static_cast<double>(data.timeStamp) / 1e-6;
+  const double kStampSeconds = static_cast<double>(data.timeStamp) / 1e6;
   evt.stamp = ros::Time(kStampSeconds);
 
   return evt;

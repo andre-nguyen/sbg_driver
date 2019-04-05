@@ -21,6 +21,8 @@ inline void StampToRosHeader(const uint32 &timestamp, std_msgs::Header *header);
 
 sensor_msgs::Imu ImuToRosImu(const SbgLogImuData &data);
 
+sbg_msgs::ImuIntegral ImuToImuInt(const SbgLogImuData &data);
+
 geometry_msgs::PoseWithCovariance QuatToRosPose(const SbgLogEkfQuatData &data);
 
 geometry_msgs::Quaternion QuatToRosQuat(const SbgLogEkfQuatData &data);
