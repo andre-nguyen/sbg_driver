@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(sbg_driver)
 
 find_package(catkin REQUIRED COMPONENTS
+             message_filters
              roscpp
              sara_msgs
              sbg_msgs
@@ -19,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp sara_msgs sbg_msgs std_srvs
+  CATKIN_DEPENDS message_filters roscpp sara_msgs sbg_msgs std_srvs
 #  DEPENDS system_lib
 )
 
@@ -27,6 +28,12 @@ catkin_package(
 ## Build ##
 ###########
 add_subdirectory(external/sbgECom)
+
+SET(COMMON_WARNINGS
+        -Wall
+        -Wpedantic
+        -Wextra
+        -Werror)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -44,7 +51,7 @@ add_library(${PROJECT_NAME} STATIC
             src/sbg_driver.cpp
             src/sbg_ecom_ros_conversions.cpp
             src/external_timestamping.cpp
-            src/sequential_stamping.cpp)
+            src/sequential_stamping.cpp src/stamp_matcher.cpp include/sbg_driver/stamp_matcher.h)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -60,10 +67,7 @@ target_link_libraries(${PROJECT_NAME}
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
-        -Wall
-        -Wpedantic
-        -Wextra
-        -Werror)
+        ${COMMON_WARNINGS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
@@ -77,6 +81,9 @@ add_executable(${PROJECT_NAME}_node
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
 
+target_compile_options(${PROJECT_NAME}_node PRIVATE
+        ${COMMON_WARNINGS})
+
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(${PROJECT_NAME}_node
@@ -89,6 +96,17 @@ target_link_libraries(${PROJECT_NAME}_node
                       ${catkin_LIBRARIES})
 
 set_property(TARGET ${PROJECT_NAME}_node PROPERTY CXX_STANDARD 14)
+
+add_library(stamp_matcher src/stamp_matcher.cpp)
+target_link_libraries(stamp_matcher ${catkin_LIBRARIES})
+target_compile_options(stamp_matcher PRIVATE ${COMMON_WARNINGS})
+
+add_executable(stamp_matcher_node src/stamp_matcher_node.cpp)
+target_link_libraries(stamp_matcher_node stamp_matcher)
+target_compile_options(stamp_matcher_node PRIVATE ${COMMON_WARNINGS})
+
+
+
 
 #############
 ## Install ##

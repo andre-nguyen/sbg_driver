@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <linux/serial.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 
@@ -85,6 +86,7 @@ SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pHandle, const char *deviceN
 	int				*pSerialHandle;
 	struct termios	 options;
 	uint32			 baudRateConst;
+    struct           serial_struct serial;
     
 	//
 	// First check if we have a valid pHandle
@@ -160,8 +162,12 @@ SbgErrorCode sbgInterfaceSerialCreate(SbgInterface *pHandle, const char *deviceN
 							// Define options
 							//
 							if (tcsetattr((*pSerialHandle), TCSANOW, &options) != -1)
-							{								
-								//
+							{
+                                ioctl(*pSerialHandle, TIOCGSERIAL, &serial);
+                                serial.flags |= ASYNC_LOW_LATENCY;
+                                ioctl(*pSerialHandle, TIOCSSERIAL, &serial);
+
+							    //
 								// The serial port is ready so create a new serial interface
 								//
 								pHandle->handle = (void*)pSerialHandle;

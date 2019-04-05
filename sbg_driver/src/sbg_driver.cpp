@@ -26,16 +26,17 @@
 // place holder in the global namespace
 #define REGISTER_ECOM_CALLBACK(id, fcn) \
   ecom_callbacks_[id] = EcomCallback(std::bind(fcn, this, \
-      std::placeholders::_1));
+      std::placeholders::_1, std::placeholders::_2));
 
 namespace sbg {
 
 SBGDriver::SBGDriver(const ros::NodeHandle &nh, const ros::NodeHandle &pnh)
 noexcept :
-    nh_(nh), pnh_(pnh), external_timestamping_(pnh), imu_seq_(0),
+    nh_(nh), pnh_(pnh), imu_seq_(0),
+    ekf_quat_buf_(kCircularBufSize),
     // @formatter:off
     output_com_config_({
-      {SBG_ECOM_LOG_IMU_DATA, SBG_ECOM_OUTPUT_MODE_DIV_2},
+      {SBG_ECOM_LOG_IMU_DATA, SBG_ECOM_OUTPUT_MODE_MAIN_LOOP},
       {SBG_ECOM_LOG_UTC_TIME, SBG_ECOM_OUTPUT_MODE_DIV_200},
       {SBG_ECOM_LOG_STATUS,   SBG_ECOM_OUTPUT_MODE_DIV_200},
       {SBG_ECOM_LOG_EKF_QUAT, SBG_ECOM_OUTPUT_MODE_MAIN_LOOP},
@@ -118,7 +119,6 @@ bool SBGDriver::Init() {
   sync_in_a.delay = 0;
   sync_in_a.sensitivity =
       SbgEComSyncInSensitivity::SBG_ECOM_SYNC_IN_RISING_EDGE;
-  ROS_WARN("fucl");
   sbgEComCmdSyncInSetConf(&sbg_handle_, SBG_ECOM_SYNC_IN_A, &sync_in_a);
 
   // apply and reboot
@@ -133,13 +133,6 @@ bool SBGDriver::Init() {
   error = sbgEComSetReceiveLogCallback(&sbg_handle_, ReceiveEcomLogC, this);
   SBG_HANDLE_ERROR_RET(error);
 
-  // Register publishing callback
-  ExternalTimestamping::PubImuFcn pub_imu_fcn =
-      std::bind(&SBGDriver::PublishRosImu, this, std::placeholders::_1,
-                std::placeholders::_2, std::placeholders::_3);
-
-  external_timestamping_.Setup(pub_imu_fcn, 200, 0.0);
-
   return true;
 }
 
@@ -150,9 +143,7 @@ bool SBGDriver::EnableStreamCallback(std_srvs::SetBoolRequest &request,
       SBG_CONFIG(com.first, com.second);
     }
     sbg_sync_out_conf_[1].outputFunction = SBG_ECOM_SYNC_OUT_MODE_MAIN_LOOP;
-    external_timestamping_.Start();
     imu_seq_ = 0;
-    ekf_quat_buf_.clear();
   } else {
     for (auto com : output_com_config_) {
       SBG_CONFIG(com.first, SBG_ECOM_OUTPUT_MODE_DISABLED);
@@ -170,9 +161,10 @@ bool SBGDriver::EnableStreamCallback(std_srvs::SetBoolRequest &request,
 
 bool SBGDriver::ReceiveEcomLog(SbgEComMsgId msg,
                                const SbgBinaryLogData *data) {
+  ros::Time now = ros::Time::now();
   auto it = ecom_callbacks_.find(msg);
   if (it != ecom_callbacks_.end()) {
-    it->second(data);
+    it->second(now, data);
   } else {
     ROS_WARN_THROTTLE(10, "Unhandled Ecom log %d", msg);
     return false;
@@ -182,81 +174,73 @@ bool SBGDriver::ReceiveEcomLog(SbgEComMsgId msg,
 }
 
 void SBGDriver::RunOnce() {
+  // Handle all buffered logs.
   sbgEComHandle(&sbg_handle_);
-//  SbgErrorCode errorCode = SBG_NO_ERROR;
-//  do {
-//    errorCode = sbgEComHandleOneLog(&sbg_handle_);
-//  } while (errorCode != SBG_NOT_READY);
 }
 
-void SBGDriver::EcomHandleImu(const SbgBinaryLogData *data) {
-//  ROS_INFO("IMU %d", data->imuData.timeStamp);
-//  sensor_msgs::ImuPtr imu(new sensor_msgs::Imu());
-//  *imu = ImuToRosImu(data->imuData);
-//  ros::Time t = ros::Time::now();
-//  if (!external_timestamping_.LookupHardwareStamp(imu_seq_, t, imu)) {
-//    // Hardware stamp not found, buffer it and let the next hardware stamp
-//    // message come in and deal with it.
-//    external_timestamping_.BufferImu(imu_seq_, t, data->imuData.timeStamp, imu);
-//  }
-//
-//  imu_seq_++;
-  sbg_msgs::ImuIntegral imu;
-  imu = ImuToImuInt(data->imuData);
-  imu.header.stamp = ros::Time::now();  // Override hardware stamp
-  this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
+void SBGDriver::EcomHandleImu(const ros::Time &now,
+                              const SbgBinaryLogData *data) {
+  imu_buf_.imu = data->imuData;
+  imu_buf_.arrival_time = now;
+  imu_buf_.orientation_valid = false;
 }
 
-void SBGDriver::EcomHandleUtc(const SbgBinaryLogData *data) {
+void SBGDriver::EcomHandleUtc(const ros::Time &/*now*/,
+                              const SbgBinaryLogData *data) {
   pubs_[SBG_ECOM_LOG_UTC_TIME]->publish(UtcToRosUtc(data->utcData));
 }
 
-void SBGDriver::EcomHandleStatus(const SbgBinaryLogData *data) {
+void SBGDriver::EcomHandleStatus(const ros::Time &/*now*/,
+                                 const SbgBinaryLogData *data) {
   ROS_INFO_THROTTLE(5, "Status %d", data->statusData.timeStamp);
 }
 
-void SBGDriver::EcomHandleEKFQuat(const SbgBinaryLogData *data) {
-  ekf_quat_buf_[data->ekfQuatData.timeStamp] = data->ekfQuatData;
+void SBGDriver::EcomHandleEKFQuat(const ros::Time &/*now*/,
+                                  const SbgBinaryLogData *data) {
+  if (data->ekfQuatData.timeStamp == imu_buf_.imu.timeStamp) {
+    sbg_msgs::ImuIntegral imu = ImuToImuInt(imu_buf_.imu);
+    imu.header.stamp = imu_buf_.arrival_time;
+    QuatToRosQuatCov(data->ekfQuatData, &imu.imu.orientation,
+                     &imu.imu.orientation_covariance);
+    this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
+  }
+//  ekf_quat_buf_.push_back(data->ekfQuatData);
+//  TryPublishImuIntegral();
 }
 
-void SBGDriver::EcomHandleMag(const SbgBinaryLogData *data) {
+void SBGDriver::EcomHandleMag(const ros::Time &/*now*/,
+                              const SbgBinaryLogData *data) {
   pubs_[SBG_ECOM_LOG_MAG]->publish(MagToRosMag(data->magData));
 }
 
-void SBGDriver::EcomHandleEventA(const SbgBinaryLogData *data) {
+void SBGDriver::EcomHandleEventA(const ros::Time &/*now*/,
+                                 const SbgBinaryLogData *data) {
   auto evt = EventToRosEvent(data->eventMarker);
   evt.header.stamp = ros::Time::now();
   pubs_[SBG_ECOM_LOG_EVENT_A]->publish(evt);
 }
 
-void SBGDriver::PublishRosImu(const ros::Time &stamp,
-                              const uint32 &/*original_stamp*/,
-                              const sensor_msgs::ImuPtr imu) {
-  // Restamp
-  imu->header.stamp = stamp;
+void SBGDriver::TryPublishImuIntegral(bool force_publish) {
+  for (auto it = ekf_quat_buf_.begin(); it != ekf_quat_buf_.end(); ++it) {
+    if (it->timeStamp == imu_buf_.imu.timeStamp) {
+      // Match
+      sbg_msgs::ImuIntegral imu = ImuToImuInt(imu_buf_.imu);
+      imu.header.stamp = imu_buf_.arrival_time;
+      QuatToRosQuatCov(*it, &imu.imu.orientation,
+          &imu.imu.orientation_covariance);
+      this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
 
-  // If we can find the corresponding ekf quaternion using the original
-  // stamp, add it to the imu message.
-//  auto search = ekf_quat_buf_.find(original_stamp);
-//  if (search != ekf_quat_buf_.end()) {
-//    // Found! fill in imu data
-//    QuatToRosQuatCov(search->second, &imu->orientation,
-//        &imu->orientation_covariance);
-//  }
+      ekf_quat_buf_.erase(ekf_quat_buf_.begin(), it);
+      return;
+    }
+  }
 
-  // Publish no matter what
-  sbg_msgs::ImuIntegral imu_integral;
-  imu_integral.imu = *imu;
-  this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu_integral);
-
-  // Cleanup
-//  for(auto it = ekf_quat_buf_.begin(); it != ekf_quat_buf_.end();) {
-//    if (it->first < original_stamp) {
-//      ekf_quat_buf_.erase(it);
-//      ++it;
-//    }
-//  }
-//  ekf_quat_buf_.erase(search);
+  // Publish even if orientation not found
+  if (force_publish) {
+    sbg_msgs::ImuIntegral imu = ImuToImuInt(imu_buf_.imu);
+    imu.header.stamp = imu_buf_.arrival_time;
+    this->pubs_[SBG_ECOM_LOG_IMU_DATA]->publish(imu);
+  }
 }
 
 }  // namespace sbg

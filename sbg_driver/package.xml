@@ -53,6 +53,7 @@
   <depend>sara_msgs</depend>
   <depend>sbg_msgs</depend>
   <depend>std_srvs</depend>
+  <depend>message_filters</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

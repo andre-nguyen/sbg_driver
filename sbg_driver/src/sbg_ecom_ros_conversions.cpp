@@ -70,6 +70,18 @@ geometry_msgs::Quaternion QuatToRosQuat(const SbgLogEkfQuatData &data) {
   return quat;
 }
 
+geometry_msgs::PoseWithCovarianceStamped QuatToRosPose(const SbgLogEkfQuatData &data) {
+  geometry_msgs::PoseWithCovarianceStamped p;
+  p.pose.covariance[21] = data.eulerStdDev[0];
+  p.pose.covariance[28] = data.eulerStdDev[0];
+  p.pose.covariance[34] = data.eulerStdDev[0];
+  p.pose.pose.orientation.w = data.quaternion[0];
+  p.pose.pose.orientation.x = data.quaternion[1];
+  p.pose.pose.orientation.y = data.quaternion[2];
+  p.pose.pose.orientation.z = data.quaternion[3];
+  return p;
+}
+
 void QuatToRosQuatCov(const SbgLogEkfQuatData &data,
                       geometry_msgs::Quaternion *quat,
                       sensor_msgs::Imu::_orientation_covariance_type *cov) {
