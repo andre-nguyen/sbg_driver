@@ -1,9 +1,13 @@
 <launch>
-    <node pkg="sbg_driver" type="node" name="sbg_driver" output="screen">
+    <arg name="name" default="sbg_driver" />
+    <node pkg="sbg_driver" type="node" name="${name}" output="screen">
 
     </node>
     <node pkg="sbg_driver" type="stamp_matcher_node" name="stamp_matcher_node" output="screen">
-        <remap from="~/imu"   to="/sbg_driver/imu" />
+        <remap from="~/imu"   to="/${name}/imu" />
         <remap from="~/stamp" to="/sync/imu" />
+
+        <remap from="~/imu_std" to="/${name}/stamp_corrected/imu_std" />
+        <remap from="~/imu_int" to="/${name}/stamp_corrected/imu_int" />
     </node>
 </launch>

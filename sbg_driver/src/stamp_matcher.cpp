@@ -19,7 +19,7 @@ StampMatcher::StampMatcher(ros::NodeHandle nh) :
     imu_to_stamp_offset_(0) {
   synchronizer_.registerCallback(boost::bind(&StampMatcher::Callback,
       this, _1, _2));
-  imu_pub_ = nh.advertise<sbg_msgs::ImuIntegral>("imu_corrected", 10);
+  imu_pub_ = nh.advertise<sbg_msgs::ImuIntegral>("imu_int", 10);
   std_imu_pub_ = nh.advertise<sensor_msgs::Imu>("imu_std", 10);
 }
 
