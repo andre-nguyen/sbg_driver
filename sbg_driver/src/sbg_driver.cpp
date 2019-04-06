@@ -225,7 +225,7 @@ void SBGDriver::TryPublishImuIntegral(bool force_publish) {
     if (it->timeStamp == imu_buf_.imu.timeStamp) {
       // Match
       sbg_msgs::ImuIntegral imu = ImuToImuInt(imu_buf_.imu);
-      imu.header.frame = "imu_link_ned";
+      imu.header.frame_id = "imu_link_ned";
       imu.header.stamp = imu_buf_.arrival_time;
       QuatToRosQuatCov(*it, &imu.imu.orientation,
           &imu.imu.orientation_covariance);
