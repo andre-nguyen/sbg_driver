@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
              message_filters
              roscpp
              sara_msgs
+             sensor_msgs
              sbg_msgs
              std_srvs)
 

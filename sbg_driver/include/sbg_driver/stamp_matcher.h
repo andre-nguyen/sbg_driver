@@ -37,7 +37,9 @@ class StampMatcher {
   bool first_;
   bool warned_;
   int imu_to_stamp_offset_;
+
   ros::Publisher imu_pub_;
+  ros::Publisher std_imu_pub_;
 };
 
 }  // namespace sbg

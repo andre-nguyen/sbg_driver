@@ -51,6 +51,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>
   <depend>sara_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>sbg_msgs</depend>
   <depend>std_srvs</depend>
   <depend>message_filters</depend>

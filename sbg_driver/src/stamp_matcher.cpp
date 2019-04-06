@@ -20,6 +20,7 @@ StampMatcher::StampMatcher(ros::NodeHandle nh) :
   synchronizer_.registerCallback(boost::bind(&StampMatcher::Callback,
       this, _1, _2));
   imu_pub_ = nh.advertise<sbg_msgs::ImuIntegral>("imu_corrected", 10);
+  std_imu_pub_ = nh.advertise<sensor_msgs::Imu>("imu_std", 10);
 }
 
 void StampMatcher::Callback(const sara_msgs::UIntStampedConstPtr &stamp,
@@ -39,6 +40,8 @@ void StampMatcher::Callback(const sara_msgs::UIntStampedConstPtr &stamp,
   sbg_msgs::ImuIntegralPtr restamped(new sbg_msgs::ImuIntegral(*imu));
   restamped->header.stamp = stamp->stamp;
   imu_pub_.publish(restamped);
+  restamped->imu.header = restamped->header;
+  std_imu_pub_.publish(restamped->imu);
 }
 
 }  // namespace sbg

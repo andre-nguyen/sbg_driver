@@ -191,8 +191,8 @@ void SBGDriver::EcomHandleUtc(const ros::Time &/*now*/,
 }
 
 void SBGDriver::EcomHandleStatus(const ros::Time &/*now*/,
-                                 const SbgBinaryLogData *data) {
-  ROS_INFO_THROTTLE(5, "Status %d", data->statusData.timeStamp);
+                                 const SbgBinaryLogData * /*data*/) {
+  // ROS_INFO_THROTTLE(5, "Status %d", data->statusData.timeStamp);
 }
 
 void SBGDriver::EcomHandleEKFQuat(const ros::Time &/*now*/,
