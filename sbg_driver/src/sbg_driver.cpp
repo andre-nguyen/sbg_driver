@@ -32,7 +32,8 @@ namespace sbg {
 
 SBGDriver::SBGDriver(const ros::NodeHandle &nh, const ros::NodeHandle &pnh)
 noexcept :
-    nh_(nh), pnh_(pnh), imu_seq_(0),
+    nh_(nh), pnh_(pnh),
+    imu_seq_(0),
     ekf_quat_buf_(kCircularBufSize),
     // @formatter:off
     output_com_config_({
@@ -132,6 +133,15 @@ bool SBGDriver::Init() {
 
   error = sbgEComSetReceiveLogCallback(&sbg_handle_, ReceiveEcomLogC, this);
   SBG_HANDLE_ERROR_RET(error);
+
+  bool auto_start = false;
+  pnh_.param<bool>("auto_start", auto_start, false);
+  if (auto_start) {
+    std_srvs::SetBoolRequest req;
+    req.data = true;
+    std_srvs::SetBoolResponse resp;
+    EnableStreamCallback(req, resp);
+  }
 
   return true;
 }
